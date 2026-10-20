@@ -15,7 +15,10 @@ const recordsRouter = require('./routes/records');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://vinyl-shop.layero.app',
+  credentials: true
+}));
 
 app.use(express.json());
 
