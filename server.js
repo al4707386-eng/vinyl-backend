@@ -16,8 +16,9 @@ const recordsRouter = require('./routes/records');
 const app = express();
 
 app.use(cors({
-  origin: 'https://vinyl-shop.layero.app',
-  credentials: true
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-Admin-Key']
 }));
 
 app.use(express.json());
