@@ -363,7 +363,7 @@ async function loadCoversByRecord() {
               (p) => `
                 <div class="covers-record__item ${p.isMain ? 'covers-record__item--main' : ''}">
                   ${p.isMain ? '<span class="covers-record__badge">Обложка</span>' : ''}
-                  <img src="${BACKEND_URL}${p.path}" alt="">
+                  <img src="${p.path.startsWith('http') ? p.path : BACKEND_URL + p.path}" alt="">
                   <p class="covers-record__path">${p.path}</p>
                 </div>
               `
