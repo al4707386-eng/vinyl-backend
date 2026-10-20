@@ -1,6 +1,6 @@
 // Базовый URL для API
 const API_URL = '/api';
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = 'https://vinyl-backend.layero.app';
 
 // Ключ администратора
 let adminKey = sessionStorage.getItem('adminKey') || '';
@@ -155,10 +155,9 @@ async function loadRecords() {
     }
 
     records.forEach((rec) => {
-      const cover = rec.cover
-        ? `<img class="record-thumb-mini" src="${rec.cover}" alt="">`
-        : `<div class="record-thumb-mini record-thumb-mini--empty">💿</div>`;
-
+const cover = rec.cover
+  ? `<img class="record-thumb-mini" src="${rec.cover.startsWith('http') ? rec.cover : BACKEND_URL + rec.cover}" alt="">`
+  : `<div class="record-thumb-mini record-thumb-mini--empty">💿</div>`;
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${rec.id}</td>
