@@ -139,15 +139,24 @@ function extractDominantColor(file) {
 async function loadRecords() {
   const tbody = document.querySelector('#recordsTable tbody');
   const empty = document.querySelector('#recordsEmpty');
+  if (!tbody) return;
+  
   tbody.innerHTML = '';
+  empty.hidden = true;
 
   try {
-    const records = fetch(`${API_URL}/records`).then((r) => r.json());
-    empty.hidden = records.length > 0;
+    // Делаем запрос напрямую к API
+    const response = await fetch(`${API_URL}/records`);
+    const records = await response.json();
+
+    if (records.length === 0) {
+      empty.hidden = false;
+      return;
+    }
 
     records.forEach((rec) => {
       const cover = rec.cover
-        ? `<img class="record-thumb-mini" src="${BACKEND_URL}${rec.cover}" alt="">`
+        ? `<img class="record-thumb-mini" src="${rec.cover}" alt="">`
         : `<div class="record-thumb-mini record-thumb-mini--empty">💿</div>`;
 
       const row = document.createElement('tr');
@@ -172,7 +181,9 @@ async function loadRecords() {
       tbody.appendChild(row);
     });
   } catch (error) {
-    console.error(error);
+    console.error('Ошибка загрузки пластинок:', error);
+    empty.textContent = 'Ошибка загрузки данных';
+    empty.hidden = false;
   }
 }
 
