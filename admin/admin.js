@@ -142,7 +142,7 @@ async function loadRecords() {
   tbody.innerHTML = '';
 
   try {
-    const records = await fetch(`${API_URL}/records`).then((r) => r.json());
+    const records = fetch(`${API_URL}/records`).then((r) => r.json());
     empty.hidden = records.length > 0;
 
     records.forEach((rec) => {
