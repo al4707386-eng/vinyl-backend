@@ -1,41 +1,18 @@
 const express = require('express');
 const db = require('../db/init');
-
 const router = express.Router();
 
-router.get('/:userId', (req, res) => {
-  const favorites = db.prepare(
-    'SELECT recordId FROM favorites WHERE userId = ?'
-  ).all(req.params.userId);
-
-  res.json(favorites.map((item) => item.recordId));
+router.get('/:userId', async (req, res) => {
+  const result = await db.query('SELECT "recordId" FROM favorites WHERE "userId" = $1', [req.params.userId]);
+  res.json(result.rows.map(r => r.recordId));
 });
-
-router.post('/', (req, res) => {
-  try {
-    const { userId, recordId } = req.body;
-
-    if (!userId || !recordId) {
-      return res.status(400).json({ error: 'Заполните userId и recordId' });
-    }
-
-    const insert = db.prepare(
-      'INSERT OR IGNORE INTO favorites (userId, recordId) VALUES (?, ?)'
-    );
-    insert.run(userId, recordId);
-
-    res.status(201).json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка сервера' });
-  }
+router.post('/', async (req, res) => {
+  const { userId, recordId } = req.body;
+  await db.query('INSERT INTO favorites ("userId", "recordId") VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, recordId]);
+  res.status(201).json({ success: true });
 });
-
-router.delete('/:userId/:recordId', (req, res) => {
-  db.prepare(
-    'DELETE FROM favorites WHERE userId = ? AND recordId = ?'
-  ).run(req.params.userId, req.params.recordId);
-
+router.delete('/:userId/:recordId', async (req, res) => {
+  await db.query('DELETE FROM favorites WHERE "userId" = $1 AND "recordId" = $2', [req.params.userId, req.params.recordId]);
   res.json({ success: true });
 });
-
 module.exports = router;
