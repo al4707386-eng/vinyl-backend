@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель — VinylRoom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <div class="admin-header__inner">
+      <div class="admin-logo">
+        <span class="admin-logo__disc" aria-hidden="true"></span>
+        <span class="admin-logo__text">Vinyl<strong>Room</strong> — админ</span>
+      </div>
+      <button id="logoutBtn" class="btn btn--ghost" hidden>Выйти</button>
+    </div>
+  </header>
+
+  <section id="loginScreen" class="login-screen">
+    <h2 class="login-screen__title">Вход для администратора</h2>
+    <form id="loginForm" class="login-form">
+      <label class="login-form__field">
+        <span class="login-form__label">Секретный ключ</span>
+        <input type="password" id="adminKeyInput" placeholder="Введите ключ" required>
+      </label>
+      <button type="submit" class="btn btn--primary btn--block">Войти</button>
+      <p id="loginError" class="error" hidden>Неверный ключ</p>
+    </form>
+  </section>
+
+  <main id="adminContent" hidden class="admin-main">
+
+    <!-- ФОРМА СОЗДАНИЯ -->
+    <section class="panel panel--form">
+      <h2 class="panel__title">Добавить пластинку</h2>
+      <form id="addRecordForm" class="record-form">
+        <div class="record-form__row">
+          <label class="inline-form__field">
+            <span class="inline-form__label">ID (латиницей, без пробелов)</span>
+            <input type="text" id="recId" placeholder="nirvana-nevermind" required>
+          </label>
+          <label class="inline-form__field inline-form__field--wide">
+            <span class="inline-form__label">Название альбома</span>
+            <input type="text" id="recTitle" placeholder="Nevermind" required>
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Исполнитель</span>
+            <input type="text" id="recArtist" placeholder="Nirvana" required>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field">
+            <span class="inline-form__label">Год</span>
+            <input type="number" id="recYear" placeholder="1991">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Жанр</span>
+            <input type="text" id="recGenre" placeholder="Grunge">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Лейбл</span>
+            <input type="text" id="recLabel" placeholder="DGC">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Страна</span>
+            <input type="text" id="recCountry" placeholder="США">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Цена, ₽</span>
+            <input type="number" id="recPrice" placeholder="3900" min="0" required>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--wide">
+            <span class="inline-form__label">Ссылка на обложку</span>
+            <input type="text" id="recCover" placeholder="Загрузите обложку кнопкой справа">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">&nbsp;</span>
+            <input type="file" id="recCoverUpload" accept="image/*" class="file-input">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">В наличии</span>
+            <select id="recInStock">
+              <option value="1" selected>Да</option>
+              <option value="0">Нет</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--full">
+            <span class="inline-form__label">Доп. фото (по одному пути на строку)</span>
+            <textarea id="recImages" rows="2" placeholder="/uploads/covers/nirvana-nevermind-1.jpg"></textarea>
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">&nbsp;</span>
+            <input type="file" id="recExtraUpload" accept="image/*" class="file-input" multiple>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--full">
+            <span class="inline-form__label">Описание</span>
+            <textarea id="recDescription" rows="2" placeholder="Альбом, который вынес гранж из подвалов Сиэтла..."></textarea>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--full">
+            <span class="inline-form__label">Треклист (по одному треку на строку)</span>
+            <textarea id="recTracks" rows="4" placeholder="Smells Like Teen Spirit&#10;In Bloom&#10;Come as You Are"></textarea>
+          </label>
+        </div>
+
+        <input type="hidden" id="recColor" value="#8a2d1a">
+
+        <button type="submit" class="btn btn--primary">Добавить пластинку</button>
+      </form>
+      <p id="addRecordMessage" class="form-message" hidden></p>
+    </section>
+
+    <!-- ФОРМА РЕДАКТИРОВАНИЯ -->
+    <section class="panel panel--form" id="editRecordPanel" hidden>
+      <h2 class="panel__title">Редактировать: <span id="editRecordTitle"></span></h2>
+      <form id="editRecordForm" class="record-form">
+        <input type="hidden" id="editRecId">
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--wide">
+            <span class="inline-form__label">Название альбома</span>
+            <input type="text" id="editRecTitle" required>
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Исполнитель</span>
+            <input type="text" id="editRecArtist" required>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field">
+            <span class="inline-form__label">Год</span>
+            <input type="number" id="editRecYear">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Жанр</span>
+            <input type="text" id="editRecGenre">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Лейбл</span>
+            <input type="text" id="editRecLabel">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Страна</span>
+            <input type="text" id="editRecCountry">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">Цена, ₽</span>
+            <input type="number" id="editRecPrice" required>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--wide">
+            <span class="inline-form__label">Ссылка на обложку</span>
+            <input type="text" id="editRecCover">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">&nbsp;</span>
+            <input type="file" id="editRecCoverUpload" accept="image/*" class="file-input">
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">В наличии</span>
+            <select id="editRecInStock">
+              <option value="1">Да</option>
+              <option value="0">Нет</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--full">
+            <span class="inline-form__label">Доп. фото (по одному пути на строку)</span>
+            <textarea id="editRecImages" rows="3"></textarea>
+          </label>
+          <label class="inline-form__field">
+            <span class="inline-form__label">&nbsp;</span>
+            <input type="file" id="editRecExtraUpload" accept="image/*" class="file-input" multiple>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--full">
+            <span class="inline-form__label">Описание</span>
+            <textarea id="editRecDescription" rows="2"></textarea>
+          </label>
+        </div>
+
+        <div class="record-form__row">
+          <label class="inline-form__field inline-form__field--full">
+            <span class="inline-form__label">Треклист (по одному треку на строку)</span>
+            <textarea id="editRecTracks" rows="4"></textarea>
+          </label>
+        </div>
+
+        <div class="record-form__actions">
+          <button type="submit" class="btn btn--primary">Сохранить изменения</button>
+          <button type="button" class="btn btn--ghost-dark" id="cancelEditBtn">Отмена</button>
+        </div>
+      </form>
+      <p id="editRecordMessage" class="form-message" hidden></p>
+    </section>
+
+    <!-- ТАБЛИЦА ПЛАСТИНОК -->
+    <section class="panel">
+      <h2 class="panel__title">Пластинки</h2>
+      <table id="recordsTable" class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Обложка</th>
+            <th>Название</th>
+            <th>Исполнитель</th>
+            <th>Год</th>
+            <th>Жанр</th>
+            <th>Цена</th>
+            <th>Наличие</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="recordsEmpty" class="empty" hidden>Пластинок пока нет</p>
+    </section>
+
+    <!-- ПОЛЬЗОВАТЕЛИ -->
+    <section class="panel">
+      <h2 class="panel__title">Пользователи <span class="panel__hint">(появляются из регистрации на сайте)</span></h2>
+      <table id="usersTable" class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Email</th>
+            <th>Дата регистрации</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="usersEmpty" class="empty" hidden>Пользователей пока нет</p>
+    </section>
+
+    <!-- ЗАКАЗЫ -->
+    <section class="panel">
+      <h2 class="panel__title">Заказы <span class="panel__hint">(появляются после покупки на сайте)</span></h2>
+      <table id="ordersTable" class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Пользователь</th>
+            <th>Состав</th>
+            <th>Сумма</th>
+            <th>Статус</th>
+            <th>Дата</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="ordersEmpty" class="empty" hidden>Заказов пока нет</p>
+    </section>
+
+    <!-- ОБЛОЖКИ ПО ПЛАСТИНКАМ -->
+    <section class="panel">
+      <h2 class="panel__title">Обложки и фото по пластинкам</h2>
+      <p class="panel__note">Для каждой пластинки показаны её обложка и дополнительные фото.</p>
+
+      <div id="coversByRecord"></div>
+      <p id="coversEmpty" class="empty" hidden>Пластинок пока нет</p>
+    </section>
+
+  <script src="admin.js"></script>
+</body>
+</html>
