@@ -1,37 +1,118 @@
 const express = require('express');
 const db = require('../db/init');
 const checkAdmin = require('../middleware/checkAdmin');
+
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  const result = await db.query('SELECT * FROM records');
-  const records = result.rows.map(r => ({ ...r, inStock: Boolean(r.inStock), images: JSON.parse(r.images), tracks: JSON.parse(r.tracks) }));
-  res.json(records);
+function parseRecord(row) {
+  return {
+    ...row,
+    inStock: Boolean(row.inStock),
+    images: JSON.parse(row.images || '[]'),
+    tracks: JSON.parse(row.tracks || '[]'),
+  };
+}
+
+router.get('/', (req, res) => {
+  const records = db.prepare('SELECT * FROM records').all();
+  res.json(records.map(parseRecord));
 });
 
-router.get('/:id', async (req, res) => {
-  const result = await db.query('SELECT * FROM records WHERE id = $1', [req.params.id]);
-  if (result.rows.length === 0) return res.status(404).json({ error: 'Не найдено' });
-  const r = result.rows[0];
-  res.json({ ...r, inStock: Boolean(r.inStock), images: JSON.parse(r.images), tracks: JSON.parse(r.tracks) });
+router.get('/:id', (req, res) => {
+  const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id);
+
+  if (!record) {
+    return res.status(404).json({ error: 'Пластинка не найдена' });
+  }
+
+  res.json(parseRecord(record));
 });
 
-router.post('/', checkAdmin, async (req, res) => {
+router.post('/', checkAdmin, (req, res) => {
   try {
-    const { id, title, artist, year, genre, label, country, price, color, cover, images, inStock, description, tracks } = req.body;
-    await db.query(`INSERT INTO records (id, title, artist, year, genre, label, country, price, color, cover, images, "inStock", description, tracks) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`, [id, title, artist, year, genre, label, country, price, color, cover, JSON.stringify(images || []), inStock ? 1 : 0, description, JSON.stringify(tracks || [])]);
-    res.status(201).json({ success: true });
-  } catch (error) { res.status(500).json({ error: 'Ошибка сервера' }); }
+    const {
+      id, title, artist, year, genre, label, country,
+      price, color, cover, images, inStock, description, tracks,
+    } = req.body;
+
+    if (!id || !title || !artist || price == null) {
+      return res.status(400).json({ error: 'Заполните id, title, artist и price' });
+    }
+
+    const existing = db.prepare('SELECT id FROM records WHERE id = ?').get(id);
+    if (existing) {
+      return res.status(400).json({ error: 'Пластинка с таким id уже существует' });
+    }
+
+    db.prepare(`
+      INSERT INTO records
+        (id, title, artist, year, genre, label, country, price, color, cover, images, inStock, description, tracks)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      title,
+      artist,
+      year || null,
+      genre || null,
+      label || null,
+      country || null,
+      price,
+      color || null,
+      cover || null,
+      JSON.stringify(images || []),
+      inStock ? 1 : 0,
+      description || null,
+      JSON.stringify(tracks || [])
+    );
+
+    res.status(201).json({ success: true, id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Ошибка сервера при создании' });
+  }
 });
 
-router.patch('/:id', checkAdmin, async (req, res) => {
+router.patch('/:id', checkAdmin, (req, res) => {
+  const record = db.prepare('SELECT * FROM records WHERE id = ?').get(req.params.id);
+  if (!record) {
+    return res.status(404).json({ error: 'Пластинка не найдена' });
+  }
+
   const { title, artist, year, genre, label, country, price, color, cover, images, inStock, description, tracks } = req.body;
-  await db.query(`UPDATE records SET title=$1, artist=$2, year=$3, genre=$4, label=$5, country=$6, price=$7, color=$8, cover=$9, images=$10, "inStock"=$11, description=$12, tracks=$13 WHERE id=$14`, [title, artist, year, genre, label, country, price, color, cover, JSON.stringify(images || []), inStock ? 1 : 0, description, JSON.stringify(tracks || []), req.params.id]);
+
+  db.prepare(`
+    UPDATE records SET
+      title = ?, artist = ?, year = ?, genre = ?, label = ?, country = ?,
+      price = ?, color = ?, cover = ?, images = ?, inStock = ?, description = ?, tracks = ?
+    WHERE id = ?
+  `).run(
+    title ?? record.title,
+    artist ?? record.artist,
+    year ?? record.year,
+    genre ?? record.genre,
+    label ?? record.label,
+    country ?? record.country,
+    price ?? record.price,
+    color ?? record.color,
+    cover ?? record.cover,
+    images ? JSON.stringify(images) : record.images,
+    inStock != null ? (inStock ? 1 : 0) : record.inStock,
+    description ?? record.description,
+    tracks ? JSON.stringify(tracks) : record.tracks,
+    req.params.id
+  );
+
   res.json({ success: true });
 });
 
-router.delete('/:id', checkAdmin, async (req, res) => {
-  await db.query('DELETE FROM records WHERE id = $1', [req.params.id]);
+router.delete('/:id', checkAdmin, (req, res) => {
+  const result = db.prepare('DELETE FROM records WHERE id = ?').run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Пластинка не найдена' });
+  }
+
   res.json({ success: true });
 });
+
 module.exports = router;

@@ -1,22 +1,39 @@
 const express = require('express');
 const db = require('../db/init');
 const checkAdmin = require('../middleware/checkAdmin');
+
 const router = express.Router();
 
-router.get('/', checkAdmin, async (req, res) => {
-  const result = await db.query('SELECT id, name, email, "createdAt" FROM users');
-  res.json(result.rows);
+router.get('/', checkAdmin, (req, res) => {
+  const users = db.prepare('SELECT id, name, email, createdAt FROM users').all();
+  res.json(users);
 });
 
-router.delete('/:id', checkAdmin, async (req, res) => {
-  const result = await db.query('DELETE FROM users WHERE id = $1', [req.params.id]);
-  if (result.rowCount === 0) return res.status(404).json({ error: 'Не найден' });
+router.delete('/:id', checkAdmin, (req, res) => {
+  const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Пользователь не найден' });
+  }
+
   res.json({ success: true });
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', (req, res) => {
   const { name } = req.body;
-  await db.query('UPDATE users SET name = $1 WHERE id = $2', [name, req.params.id]);
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Имя не может быть пустым' });
+  }
+
+  const result = db.prepare('UPDATE users SET name = ? WHERE id = ?')
+    .run(name.trim(), req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: 'Пользователь не найден' });
+  }
+
   res.json({ success: true });
 });
+
 module.exports = router;
